@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, TextAreaField
-from wtforms.validators import DataRequired, Length
+from wtforms.validators import DataRequired, Length, Optional
 from wtforms.fields.html5 import URLField, EmailField
 
 
@@ -23,4 +23,15 @@ class LoginForm(FlaskForm):
     """Login form."""
 
     username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[Length(min=6)])
+
+
+class UserEditForm(FlaskForm):
+    """Form for editing user."""
+
+    username = StringField('Username', validators=[DataRequired()])
+    email = EmailField('E-mail', validators=[DataRequired()])
+    image_url = URLField('(Optional) Image URL')
+    header_image_url = URLField('(Optional) Header Image URL')
+    bio = StringField('Bio', validators=[Optional()])
     password = PasswordField('Password', validators=[Length(min=6)])
