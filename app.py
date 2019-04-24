@@ -4,10 +4,10 @@ from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm
+from forms import UserAddForm, LoginForm, MessageForm, UserEditForm
 from models import db, connect_db, User, Message
 
-CURR_USER_KEY = "curr_user"
+CURR_USER_ID = "curr_user"
 
 app = Flask(__name__)
 
@@ -33,8 +33,8 @@ connect_db(app)
 def add_user_to_g():
     """If we're logged in, add curr user to Flask global."""
 
-    if CURR_USER_KEY in session:
-        g.user = User.query.get(session[CURR_USER_KEY])
+    if CURR_USER_ID in session:
+        g.user = User.query.get(session[CURR_USER_ID])
 
     else:
         g.user = None
@@ -43,14 +43,14 @@ def add_user_to_g():
 def do_login(user):
     """Log in user."""
 
-    session[CURR_USER_KEY] = user.id
+    session[CURR_USER_ID] = user.id
 
 
 def do_logout():
     """Logout user."""
 
-    if CURR_USER_KEY in session:
-        del session[CURR_USER_KEY]
+    if CURR_USER_ID in session:
+        del session[CURR_USER_ID]
 
 
 @app.route('/signup', methods=["GET", "POST"])
@@ -212,7 +212,40 @@ def stop_following(follow_id):
 def profile():
     """Update profile for current user."""
 
-    # IMPLEMENT THIS
+    user = User.query.get(session[CURR_USER_ID])
+    print(user.header_image_url)
+
+    if user.image_url == "/static/images/default-pic.png":
+        user.image_url = None
+    if user.header_image_url == '/static/images/warbler-hero.jpg':
+        user.header_image_url = None
+
+    form = UserEditForm(obj=user)
+
+    if form.validate_on_submit():
+        password = form.password.data
+        valid_user = User.authenticate(username=user.username,
+                                       password=password)
+        if valid_user:
+            user.username = form.username.data
+            user.email = form.email.data
+            user.image_url = form.image_url.data or User.image_url.default.arg
+            user.header_image_url = form.header_image_url.data or User.header_image_url.default.arg
+            user.bio = form.bio.data
+
+            db.session.commit()
+
+            return redirect(f'/users/{session[CURR_USER_ID]}')
+        else:
+            if session[CURR_USER_ID] == "curr_user":
+                flash("Must be logged in to Edit account", 'danger')
+            else:
+                flash("Invalid credentials.", 'danger')
+            return redirect('/')
+    else:
+        return render_template('/users/edit.html', form=form,
+                               user_id=session[CURR_USER_ID])
+
 
 
 @app.route('/users/delete', methods=["POST"])
