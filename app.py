@@ -215,6 +215,8 @@ def profile():
     user = User.query.get(session[CURR_USER_ID])
     print(user.header_image_url)
 
+    """This block is to prevent default image file pathways
+       from appearing in the url fields in the form"""
     if user.image_url == "/static/images/default-pic.png":
         user.image_url = None
     if user.header_image_url == '/static/images/warbler-hero.jpg':
@@ -326,11 +328,15 @@ def homepage():
     """
 
     if g.user:
+        g.user.following
+        ids = [followee.id for followee in g.user.following]
         messages = (Message
                     .query
+                    .filter(Message.user_id.in_(ids))
                     .order_by(Message.timestamp.desc())
                     .limit(100)
-                    .all())
+                    .all()
+                    )
 
         return render_template('home.html', messages=messages)
 
