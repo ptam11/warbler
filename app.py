@@ -113,8 +113,10 @@ def login():
 def logout():
     """Handle logout of user."""
 
-    # IMPLEMENT THIS
+    do_logout()
 
+    flash('Goodbye', 'success')
+    return redirect('/login')
 
 ##############################################################################
 # General user routes:
@@ -139,9 +141,8 @@ def list_users():
 @app.route('/users/<int:user_id>')
 def users_show(user_id):
     """Show user profile."""
-
+    
     user = User.query.get_or_404(user_id)
-
     # snagging messages in order from the database;
     # user.messages won't be in order by default
     messages = (Message
