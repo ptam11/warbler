@@ -7,7 +7,7 @@
 
 import os
 from unittest import TestCase
-
+from sqlalchemy.exc import IntegrityError
 from models import db, User, Message, Follows
 
 # BEFORE we import our app, let's set an environmental variable
@@ -25,7 +25,6 @@ from app import app
 # Create our tables (we do this here, so we only create the tables
 # once for all tests --- in each test, we'll delete the data
 # and create fresh new clean test data
-
 
 
 class UserModelTestCase(TestCase):
@@ -61,23 +60,30 @@ class UserModelTestCase(TestCase):
         self.assertEqual(len(u.followers), 0)
         self.assertEqual('<User #1: testuser, test@test.com>', f'{u}')
 
-        # Does non-nullable and unique fields work
-        
+    def test_invalid_user(self):
+        """- Are username/email unique
+           - Are username, email, and password non-nullable"""
+        valid_u = User(
+            email="test@test.com",
+            username="testuser",
+            password="HASHED_PASSWORD"
+        )
+
+        db.session.add(valid_u)
+        db.session.commit()
+
         unique_username = User(
             email="uu@test.com",
             username="testuser",
             password="HASHED_PASSWORD"
         )
-        # adding throws sql error need to figure out how catch and test that
-        # db.session.add(unique_username)
-        # db.session.commit()
 
         unique_email = User(
             email="test@test.com",
             username="UE",
             password="HASHED_PASSWORD"
         )
-        
+
         missing_username = User(
             email="mu@test.com",
             password="HASHED_PASSWORD"
@@ -88,16 +94,20 @@ class UserModelTestCase(TestCase):
         )
         missing_password = User(
             email="mp@test.com",
-            username="MP",
+            username="MP"
         )
-
-        self.assertFalse(User.query.filter_by(email="uu@test.com").all())
-        self.assertFalse(User.query.filter_by(username="UE").all())
-
-        self.assertFalse(User.query.filter_by(email="mu@test.com").all())
-        self.assertFalse(User.query.filter_by(username="ME").all())
-        self.assertFalse(User.query.filter_by(email="mp@test.com").all())
-
+        test_users = [unique_username, unique_email, missing_username,
+                      missing_email, missing_password]
+        for user in test_users:
+            try:
+                db.session.add(user)
+                db.session.commit()
+            except IntegrityError:
+                db.session.rollback()
+                t = True
+            else:
+                t = False
+            self.assertEqual(t, True)
 
     def test_following(self):
         """Does the following functionality work"""
@@ -131,3 +141,20 @@ class UserModelTestCase(TestCase):
 
         self.assertFalse(u1.following)
         self.assertEqual(u2.is_followed_by(u1), False)
+
+    def test_user_authentication(self):
+        """Test authentication: valid, invalid password, and invalid username"""
+        valid = User.signup(
+            email="valid@test.com",
+            username="valid",
+            password="password",
+            image_url=None
+        )
+        db.session.commit()
+
+        self.assertTrue(User.authenticate(username=valid.username,
+                                          password="password"))
+        self.assertFalse(User.authenticate(username=valid.username,
+                                           password="Invalid"))
+        self.assertFalse(User.authenticate(username="Invalid",
+                                           password="password"))
