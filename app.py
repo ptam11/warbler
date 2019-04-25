@@ -5,7 +5,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from forms import UserAddForm, LoginForm, MessageForm, UserEditForm
-from models import db, connect_db, User, Message
+from models import db, connect_db, User, Message, Like
 
 CURR_USER_ID = "curr_user"
 
@@ -212,17 +212,22 @@ def stop_following(follow_id):
 def profile():
     """Update profile for current user."""
 
-    user = User.query.get(session[CURR_USER_ID])
+    if not(g.user):
+        flash("Please login", 'info')
+        return redirect('/login')
+
+    user = User.query.get(g.user)
     print(user.header_image_url)
 
     """This block is to prevent default image file pathways
        from appearing in the url fields in the form"""
+    
     if user.image_url == "/static/images/default-pic.png":
         user.image_url = None
     if user.header_image_url == '/static/images/warbler-hero.jpg':
         user.header_image_url = None
 
-    form = UserEditForm(obj=user)
+        form = UserEditForm(obj=user)
 
     if form.validate_on_submit():
         password = form.password.data
@@ -237,16 +242,13 @@ def profile():
 
             db.session.commit()
 
-            return redirect(f'/users/{session[CURR_USER_ID]}')
+            return redirect(f'/users/{g.user}')
         else:
-            if session[CURR_USER_ID] == "curr_user":
-                flash("Must be logged in to Edit account", 'danger')
-            else:
-                flash("Invalid credentials.", 'danger')
+            flash("Invalid credentials.", 'danger')
             return redirect('/')
     else:
         return render_template('/users/edit.html', form=form,
-                               user_id=session[CURR_USER_ID])
+                               user_id=g.user)
 
 
 
@@ -327,6 +329,7 @@ def homepage():
     - logged in: 100 most recent messages of followees
     """
 
+    # FURTHER STUDY: ORM queries twice instead of 1 SQL query (not efficient)
     if g.user:
         g.user.following
         ids = [followee.id for followee in g.user.following]
@@ -337,11 +340,31 @@ def homepage():
                     .limit(100)
                     .all()
                     )
-
         return render_template('home.html', messages=messages)
 
     else:
         return render_template('home-anon.html')
+
+
+@app.route('/messages/<int:msg_id>/like', methods=['POST'])
+def like_homepage(msg_id):
+    if g.user:
+        like = Like.query.filter_by(user_id=g.user.id, message_id=msg_id).first()
+        # import pdb; pdb.set_trace()
+        if not like:
+            like = Like(user_id=g.user.id, message_id=msg_id)
+            db.session.add(like)
+            db.session.commit()
+        else:
+            db.session.delete(like)
+            db.session.commit()
+        return redirect('/')
+    return redirect('/login')
+
+
+
+
+
 
 
 ##############################################################################

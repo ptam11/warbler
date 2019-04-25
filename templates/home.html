@@ -50,8 +50,18 @@
               <a href="/users/{{ msg.user.id }}">@{{ msg.user.username }}</a>
               <span class="text-muted">{{ msg.timestamp.strftime('%d %B %Y') }}</span>
               <p>{{ msg.text }}</p>
+
             </div>
           </li>
+          <form action="/messages/{{ msg.id }}/like" method='post'>
+              {% if g.user.id != msg.user_id %}
+                {% if g.user in msg.liked_users %}
+                  <button type="submit"><i class="fas fa-star"></i></button>
+                {% else %}
+                  <button type="submit"><i class="far fa-star"></i></button>
+                {% endif %}  
+              {% endif %}
+              </form>
         {% endfor %}
       </ul>
     </div>
