@@ -350,23 +350,35 @@ def homepage():
 def like_homepage(msg_id):
     if g.user:
         like = Like.query.filter_by(user_id=g.user.id, message_id=msg_id).first()
-        # import pdb; pdb.set_trace()
         if not like:
             like = Like(user_id=g.user.id, message_id=msg_id)
             db.session.add(like)
             db.session.commit()
         else:
+            #make this delete with ajax later
             db.session.delete(like)
             db.session.commit()
         return redirect('/')
     return redirect('/login')
 
 
+@app.route('/users/<int:user_id>/likes')
+def users_likes(user_id):
+    """Show list of likes of this user."""
 
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
 
-
-
-
+    user = User.query.get_or_404(user_id)
+    ids = [message.user_id for message in g.user.liked_messages]
+    liked_user = (User
+                  .query
+                  .filter(User.id.in_(ids))
+                  .limit(100)
+                  .all()
+                  )
+    return render_template('/users/liked.html', user=g.user)
 ##############################################################################
 # Turn off all caching in Flask
 #   (useful for dev; in production, this kind of stuff is typically
