@@ -33,6 +33,7 @@
             </div>
             <p class="single-message">{{ message.text }}</p>
             <span class="text-muted">{{ message.timestamp.strftime('%d %B %Y') }}</span>
+            {% include "/like_button.html" %}
           </div>
         </li>
       </ul>

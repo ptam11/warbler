@@ -1,0 +1,7 @@
+<div id="{{message.id}}">
+    {% if message in g.user.liked_messages %}
+        <i class="fas fa-star like-btn" style="color: yellow; text-shadow: 0 0 3px #000;"></i>
+    {% else %}
+        <i class="far fa-star like-btn" style="color: yellow; text-shadow: 0 0 3px #000;"></i>
+    {% endif %}
+</div>

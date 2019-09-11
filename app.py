@@ -28,6 +28,11 @@ connect_db(app)
 ##############################################################################
 # User signup/login/logout
 
+# TODO: 
+# 1) url_for()
+# 2) better query
+# 3) heroku
+
 
 @app.before_request
 def add_user_to_g():
@@ -77,7 +82,7 @@ def signup():
             )
             db.session.commit()
 
-        except IntegrityError as e:
+        except IntegrityError:
             flash("Username already taken", 'danger')
             return render_template('users/signup.html', form=form)
 
@@ -216,8 +221,7 @@ def profile():
         flash("Please login", 'info')
         return redirect('/login')
 
-    user = User.query.get(g.user)
-    print(user.header_image_url)
+    user = g.user
 
     """This block is to prevent default image file pathways
        from appearing in the url fields in the form"""
@@ -349,15 +353,20 @@ def homepage():
 @app.route('/messages/<int:msg_id>/like', methods=['POST'])
 def like_homepage(msg_id):
     if g.user:
+        # check if 'like' is in the db
         like = Like.query.filter_by(user_id=g.user.id, message_id=msg_id).first()
+        
+        # add a 'like'
         if not like:
             like = Like(user_id=g.user.id, message_id=msg_id)
             db.session.add(like)
             db.session.commit()
+
+        # remove the 'like'
         else:
-            #make this delete with ajax later
             db.session.delete(like)
             db.session.commit()
+
         return redirect('/')
     return redirect('/login')
 

@@ -535,7 +535,7 @@ p.card-bio {
   flex: 1;
 }
 
-.like {
+.like-btn {
   position: relative;
   z-index: 9999;
 }

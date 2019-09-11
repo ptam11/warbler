@@ -68,22 +68,20 @@ class UserViewTestCase(TestCase):
             # Now, that session setting is saved, so we can have
             # the rest of ours test
 
-            resp_following = c.get('/users/1/following')
-            resp_followers = c.get('/users/1/followers')
+        resp_following = c.get('/users/1/following')
+        resp_followers = c.get('/users/1/followers')
 
-            # Make sure it redirects
-            self.assertEqual(resp_following.status_code, 200)
-            self.assertEqual(resp_followers.status_code, 200)
+        # Make sure it redirects
+        self.assertEqual(resp_following.status_code, 200)
+        self.assertEqual(resp_followers.status_code, 200)
 
-            # msg = Message.query.one()
-            # self.assertEqual(msg.text, "Hello")
-
+        # mimic logout by clearing the session
         with self.client as c:
             with c.session_transaction() as sess:
                 del sess[CURR_USER_ID]        
 
-            resp_following = c.get('/users/1/following')
-            resp_followers = c.get('/users/1/followers')
+        resp_following = c.get('/users/1/following')
+        resp_followers = c.get('/users/1/followers')
 
-            self.assertEqual(resp_following.status_code, 302)
-            self.assertEqual(resp_followers.status_code, 302)
+        self.assertEqual(resp_following.status_code, 302)
+        self.assertEqual(resp_followers.status_code, 302)
